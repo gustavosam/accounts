@@ -1,0 +1,272 @@
+openapi: 3.0.0
+info:
+  title: Accounts
+  description: 
+    This application allows you to obtain the information about the accounts.
+  version: 1.0.0
+externalDocs:
+  description: Find out more about Accounts
+  url: http://swagger.io
+servers:
+  - url: https://localhost:8083
+tags:
+  - name: accounts
+    description: Everything about your accounts.
+paths:
+  /account:
+    post:
+      tags:
+        - accounts
+      summary: Allows you to register an account.
+      description: Allows you to register an account of a person or company.
+      operationId: createAccount
+      requestBody:
+        required: true
+        description: Allows to register an account.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccountRequest'
+      responses:
+        '201':
+          description: Account created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Account'
+        '400':
+          description: Credit request rejected
+          
+  /account/{accountNumber}/retire:
+    patch:
+      tags:
+        - accounts
+      summary: Allows you to retire money of your account.
+      description: Allos you to retire money of a personal or company account.
+      operationId: retireAccount
+      parameters:
+        - name: accountNumber
+          in: path
+          description: Account number of the client.
+          required: true
+          schema:
+            type: string
+        - name: amount
+          in: query
+          description: Amount of money that you want to retire of your account.
+          required: true
+          schema: 
+            type: number
+            format: double
+            
+      responses:
+        '200':
+          description: Your retire of money was made successfully
+          content:
+            application/json:
+              schema: 
+                $ref: '#/components/schemas/AccountRetireDeposit'
+        '400':
+          description: Invalid request, check your amount of your account.
+          
+  /account/{accountNumber}/deposit:
+    patch:
+      tags:
+        - accounts
+      summary: Allows you to deposit money of your account.
+      description: Allows you to deposit money of a personal or company account.
+      operationId: depositAccount
+      parameters:
+        - name: accountNumber
+          in: path
+          description: Account number of the client.
+          required: true
+          schema:
+            type: string
+        - name: amount
+          in: query
+          description: Amount of money that you want to deposit of your account.
+          required: true
+          schema: 
+            type: number
+            format: double
+            
+      responses:
+        '200':
+          description: Your deposit of money was made successfully
+          content:
+            application/json:
+              schema: 
+                $ref: '#/components/schemas/AccountRetireDeposit'
+        '400':
+          description: Invalid request
+  
+  /account/{accountNumber}/consult:
+    get:
+      tags:
+        - accounts
+      summary: Allows yo to consult the information of your account.
+      description: Allows you to consult the information of your personal or company account.
+      operationId: consultAccount
+      parameters:
+        - name: accountNumber
+          in: path
+          description: Account number of the client.
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Your request was made successfully
+          content:
+            application/json:
+              schema: 
+                $ref: '#/components/schemas/Account'
+        '400':
+          description: Check the information of the account.
+  
+  /account/{accountNumber}/signers:
+    patch:
+      tags:
+        - accounts
+      summary: Allows you to add the information of the signers of an account.
+      description: Allows you to add the information of the signers of a personal or company account.
+      operationId: addSignersAccount
+      parameters:
+        - name: accountNumber
+          in: path
+          description: Account number of the client.
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        description: The information of the signers.
+        content:
+          application/json:
+            schema:
+              items:
+                $ref: '#/components/schemas/SignersRequired'
+      responses:
+        '200':
+          description: Your update of signers was made successfully
+          content:
+            application/json:
+              schema: 
+                $ref: '#/components/schemas/Account'
+                
+          
+components:
+  schemas:
+    SignersRequired:
+      required:
+        - fullName
+        - document
+      type: object
+      properties:
+        fullName: 
+          type: string
+        document:
+          type: string
+    AccountRequest:
+      required:
+        - accountType
+        - accountAmount
+        - accountCommission
+        - unlimitedMovements
+        - customerDocument
+        - titulars
+      type: object
+      properties:
+        accountType:
+          type: string
+          enum:
+            - AHORRO
+            - CORRIENTE
+            - PLAZOFIJO
+        accountAmount:
+          type: number
+          format: double
+        accountCommission:
+          type: number
+          format: double
+        unlimitedMovements:
+          type: boolean
+        quantityMovements:
+          type: integer
+        customerDocument:
+          type: string
+        titulars:
+          items:
+            $ref: '#/components/schemas/TitularsIn'
+        signers:
+          items:
+            $ref: '#/components/schemas/Signers'
+    TitularsIn:
+      required:
+        - document
+        - name
+      type: object
+      properties:
+        document:
+          type: string
+        name:
+          type: string
+    Signers:
+      type: object
+      properties:
+        fullName:
+          type: string
+        document:
+          type: string
+    Account:
+      type: object
+      properties:
+        accountNumber:
+          type: string
+        accountType:
+          type: string
+        accountAmount:
+          type: number
+          format: double
+        accountCommission:
+          type: number
+          format: double
+        unlimitedMovements:
+          type: boolean
+        quantityMovements:
+          type: integer
+        customerDocument:
+          type: string
+        titulars:
+          type: array
+          items:
+            $ref: '#/components/schemas/TitularsOut'
+        signers:
+          type: array
+          items:
+            $ref: '#/components/schemas/Signers'
+        creationDate:
+          type: string
+          format: date
+    TitularsOut:
+      type: object
+      properties:
+        document:
+          type: string
+        name:
+          type: string
+    AccountRetireDeposit:
+      type: object
+      properties:
+        accountNumber:
+          type: string
+        accountType:
+          type: string
+        accountAmount:
+          type: number
+          format: double
+      
+          
+        
+            
