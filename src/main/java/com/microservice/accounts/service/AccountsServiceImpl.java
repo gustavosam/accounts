@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -109,9 +110,13 @@ public class AccountsServiceImpl implements AccountsService{
     }
 
     @Override
-    public Boolean titularsEmpty(List<TitularsIn> titulars) {
+    public Boolean listTitularIsCorrect(List<TitularsIn> titulars) {
 
-        return titulars.isEmpty();
+        if(titulars.isEmpty()){
+            return false;
+        }
+
+        return titulars.stream().allMatch(titular -> titular.getName() != null && titular.getDocument() != null);
     }
 
     @Override
@@ -171,7 +176,10 @@ public class AccountsServiceImpl implements AccountsService{
     public AccountRetireDeposit depositAccount(AccountsDocuments accountsDocuments, Double amountToDeposit) {
 
         accountsDocuments.setAccountAmount(  accountsDocuments.getAccountAmount() + amountToDeposit );
-        accountsDocuments.setQuantityMovements( accountsDocuments.getQuantityMovements() -1 );
+
+        if(accountsDocuments.getAccountType().equalsIgnoreCase("AHORRO") || accountsDocuments.getAccountType().equalsIgnoreCase("PLAZOFIJO")){
+            accountsDocuments.setQuantityMovements(accountsDocuments.getQuantityMovements() -1);
+        }
 
         AccountRetireDeposit accountDeposit = AccountsMapper.mapAccountDocmentToAccountRetireDeposit( accountRepository.save(accountsDocuments) );
 
@@ -197,11 +205,45 @@ public class AccountsServiceImpl implements AccountsService{
 
     @Override
     public Account addSigner(AccountsDocuments accountsDocuments, List<SignersRequired> signersRequired) {
-        List<SignersDocumentComplementary> signers = signersRequired.stream().filter(Objects::nonNull).map(AccountsMapper::mapSignerRToSignerComplementary).collect(Collectors.toList());
 
-        accountsDocuments.setSigners(signers);
+        List<SignersDocumentComplementary> newSigners = signersRequired.stream().filter(Objects::nonNull).map(AccountsMapper::mapSignerRToSignerComplementary).collect(Collectors.toList());
+        List<SignersDocumentComplementary> signers = accountsDocuments.getSigners();
+
+        if(signers == null){
+            signers = new ArrayList<>();
+        }
+
+        List<SignersDocumentComplementary> unionSigners = new ArrayList<>();
+        unionSigners.addAll(signers);
+        unionSigners.addAll(newSigners);
+
+
+        accountsDocuments.setSigners(unionSigners);
 
         return AccountsMapper.mapAccountDocumentToAccount( accountRepository.save(accountsDocuments) );
 
+    }
+
+    @Override
+    public Boolean validateQuantitySignersCreationAccount(List<Signers> signersRequired ) {
+        return signersRequired.size() > 4;
+    }
+
+    @Override
+    public Boolean listSignersIsCorrect(List<Signers> signersRequired) {
+        if(signersRequired.isEmpty()){
+            return false;
+        }
+
+        return signersRequired.stream().allMatch(signer -> signer.getFullName() != null && signer.getDocument() != null);
+    }
+
+    @Override
+    public Boolean listAddedSignersIsCorrect(List<SignersRequired> signersRequired) {
+        if(signersRequired.isEmpty()){
+            return false;
+        }
+
+        return signersRequired.stream().allMatch(signer -> signer.getFullName() != null && signer.getDocument() != null);
     }
 }

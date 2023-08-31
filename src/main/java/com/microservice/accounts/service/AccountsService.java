@@ -22,7 +22,7 @@ public interface AccountsService {
 
     Boolean existAccountCorriente(List<AccountsDocuments> accountsDocuments);
 
-    Boolean titularsEmpty(List<TitularsIn> titulars);
+    Boolean listTitularIsCorrect(List<TitularsIn> titulars);
 
     Boolean justATitularPersonal(List<TitularsIn> titulars);
 
@@ -41,4 +41,10 @@ public interface AccountsService {
     Boolean validateIfYouCanAddSigners(AccountsDocuments accountsDocuments, List<SignersRequired> signersRequired);
 
     Account addSigner(AccountsDocuments accountsDocuments, List<SignersRequired> signersRequired);
+
+    Boolean validateQuantitySignersCreationAccount(List<Signers> signersRequired);
+
+    Boolean listSignersIsCorrect(List<Signers> signersRequired);
+
+    Boolean listAddedSignersIsCorrect(List<SignersRequired> signersRequired);
 }

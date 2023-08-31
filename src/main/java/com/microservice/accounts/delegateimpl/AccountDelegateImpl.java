@@ -47,13 +47,15 @@ public class AccountDelegateImpl implements AccountApiDelegate {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ClaseError.getInstance("Las cuentas corrientes si pagan comisión"));
         }
 
+        if(accountRequest.getUnlimitedMovements() == null){
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ClaseError.getInstance("Indique si la cuenta posee movimientos ilimitados o no"));
+        }
+
         if(accountRequest.getAccountType().getValue().equalsIgnoreCase("CORRIENTE") && accountRequest.getUnlimitedMovements() && accountRequest.getQuantityMovements() != null){
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ClaseError.getInstance("Las cuentas corrientes tienen movimientos ilimitados, no es necesario colocar la cantidad de movimientos"));
         }
 
-        if(accountRequest.getUnlimitedMovements() == null){
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ClaseError.getInstance("Indique si la cuenta posee movimientos ilimitados o no"));
-        }
+
 
         if(accountRequest.getUnlimitedMovements() != (accountsService.ilimitMovements(accountRequest.getAccountType().getValue()))){
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ClaseError.getInstance("Las cuentas ahorro y plazo fijo, tienen un limite de movimientos"));
@@ -87,7 +89,7 @@ public class AccountDelegateImpl implements AccountApiDelegate {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ClaseError.getInstance("Eres un cliente PERSONAL, ya posees una cuenta corriente"));
         }
 
-        if(accountsService.titularsEmpty(accountRequest.getTitulars())){
+        if(! accountsService.listTitularIsCorrect(accountRequest.getTitulars())){
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ClaseError.getInstance("Ingrese el titular de la cuenta"));
         }
 
@@ -101,6 +103,14 @@ public class AccountDelegateImpl implements AccountApiDelegate {
 
         if(customer.getCustomerType().equalsIgnoreCase("COMPANY") && (accountRequest.getAccountType().getValue().equalsIgnoreCase("PLAZOFIJO"))){
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ClaseError.getInstance("Los clientes empresariales no pueden aperturar cuentas de plazo fijo"));
+        }
+
+        if(customer.getCustomerType().equalsIgnoreCase("COMPANY") &&  accountRequest.getSigners() != null && !accountsService.listSignersIsCorrect(accountRequest.getSigners())){
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ClaseError.getInstance("Ingresa correctamente los datos de los firmantes"));
+        }
+
+        if(customer.getCustomerType().equalsIgnoreCase("COMPANY")  && accountRequest.getSigners() != null && accountsService.validateQuantitySignersCreationAccount(accountRequest.getSigners())){
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ClaseError.getInstance("No puedes agregar más de 4 firmantes en una cuenta bancaria empresarial"));
         }
 
         return ResponseEntity.status(HttpStatus.OK).body(accountsService.createAccount(accountRequest));
@@ -188,6 +198,18 @@ public class AccountDelegateImpl implements AccountApiDelegate {
 
         if(accountsDocuments.getSigners() != null && !accountsService.validateIfYouCanAddSigners(accountsDocuments, signersRequired)){
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ClaseError.getInstance("No puedes ingresar más de 4 firmantes a la cuenta"));
+        }
+
+        if(accountsDocuments.getSigners() == null && signersRequired.isEmpty()){
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ClaseError.getInstance("Tu lista de firmantes no puede estar vacía"));
+        }
+
+        if(accountsDocuments.getSigners() == null && !accountsService.listAddedSignersIsCorrect(signersRequired)){
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ClaseError.getInstance("Verifica los datos de tus firmantes"));
+        }
+
+        if(accountsDocuments.getSigners() == null && signersRequired.size() > 4){
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ClaseError.getInstance("No puedes ingresar más de 4 firmantes"));
         }
 
         return ResponseEntity.status(HttpStatus.OK).body(accountsService.addSigner(accountsDocuments, signersRequired));
