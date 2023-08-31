@@ -1,9 +1,11 @@
 package com.microservice.accounts.service;
 
 import com.microservice.accounts.documents.AccountsDocuments;
+import com.microservice.accounts.documents.MovementsDocuments;
 import com.microservice.accounts.feignclient.CustomerFeignClient;
 import com.microservice.accounts.model.*;
 import com.microservice.accounts.repository.AccountRepository;
+import com.microservice.accounts.repository.MovementsRepository;
 import com.microservice.accounts.service.mapper.AccountsMapper;
 import com.microservice.accounts.util.complementary.CustomersComplementary;
 import com.microservice.accounts.util.complementary.SignersDocumentComplementary;
@@ -24,13 +26,30 @@ public class AccountsServiceImpl implements AccountsService{
     @Autowired
     private CustomerFeignClient customerFeignClient;
 
+    @Autowired
+    private MovementsRepository movementsRepository;
+
     @Override
     public Account createAccount(AccountRequest accountRequest) {
 
         AccountsDocuments accountsDocuments = AccountsMapper.mapAccountRequestToAccountsDocuments(accountRequest);
         accountsDocuments.setAccountCreationDate(LocalDate.now());
 
-        return AccountsMapper.mapAccountDocumentToAccount(  accountRepository.save(accountsDocuments) );
+        Account accountNew = AccountsMapper.mapAccountDocumentToAccount(  accountRepository.save(accountsDocuments) );
+
+        //LA CREACIÓN DE UNA CUENTA GENERA UN MOVIMIENTO
+        MovementsDocuments movementAccount = new MovementsDocuments();
+        movementAccount.setMovementType("ALTA CUENTA");
+        movementAccount.setCustomerDocument(accountRequest.getCustomerDocument());
+        movementAccount.setAccountType(accountRequest.getAccountType().getValue());
+        movementAccount.setAccountNumber(accountNew.getAccountNumber());
+        movementAccount.setAmount(accountRequest.getAccountAmount());
+
+        movementAccount.setMovementDate(LocalDate.now());
+
+        movementsRepository.save(movementAccount);
+
+        return accountNew;
     }
 
     @Override
@@ -120,16 +139,26 @@ public class AccountsServiceImpl implements AccountsService{
     public AccountRetireDeposit retireAccount(AccountsDocuments accountsDocuments, Double amountToRetire) {
 
         if(accountsDocuments.getAccountType().equalsIgnoreCase("AHORRO") || accountsDocuments.getAccountType().equalsIgnoreCase("PLAZOFIJO")){
-
-            accountsDocuments.setAccountAmount(accountsDocuments.getAccountAmount() - amountToRetire );
             accountsDocuments.setQuantityMovements(accountsDocuments.getQuantityMovements() -1);
-
-            return AccountsMapper.mapAccountDocmentToAccountRetireDeposit( accountRepository.save(accountsDocuments) );
         }
 
         accountsDocuments.setAccountAmount(accountsDocuments.getAccountAmount() - amountToRetire );
 
-        return AccountsMapper.mapAccountDocmentToAccountRetireDeposit( accountRepository.save(accountsDocuments) );
+        AccountRetireDeposit accountRetired = AccountsMapper.mapAccountDocmentToAccountRetireDeposit( accountRepository.save(accountsDocuments) );
+
+        //EL RETIRO DE DINERO DE UNA CUENTA GENERA UN MOVIMIENTO
+        MovementsDocuments movementAccount = new MovementsDocuments();
+        movementAccount.setMovementType("RETIRO CUENTA");
+        movementAccount.setCustomerDocument(accountsDocuments.getCustomerDocument());
+        movementAccount.setAccountType(accountsDocuments.getAccountType());
+        movementAccount.setAccountNumber(accountsDocuments.getAccountNumber());
+        movementAccount.setAmount(amountToRetire);
+        movementAccount.setMovementDate(LocalDate.now());
+
+        movementsRepository.save(movementAccount);
+
+        return accountRetired;
+
     }
 
     @Override
@@ -144,7 +173,20 @@ public class AccountsServiceImpl implements AccountsService{
         accountsDocuments.setAccountAmount(  accountsDocuments.getAccountAmount() + amountToDeposit );
         accountsDocuments.setQuantityMovements( accountsDocuments.getQuantityMovements() -1 );
 
-        return AccountsMapper.mapAccountDocmentToAccountRetireDeposit( accountRepository.save(accountsDocuments) );
+        AccountRetireDeposit accountDeposit = AccountsMapper.mapAccountDocmentToAccountRetireDeposit( accountRepository.save(accountsDocuments) );
+
+        //EL DEPOSITO DE DINERO A UNA CUENTA GENERA UN MOVIMIENTO
+        MovementsDocuments movementAccount = new MovementsDocuments();
+        movementAccount.setMovementType("DEPOSITO CUENTA");
+        movementAccount.setCustomerDocument(accountsDocuments.getCustomerDocument());
+        movementAccount.setAccountType(accountsDocuments.getAccountType());
+        movementAccount.setAccountNumber(accountsDocuments.getAccountNumber());
+        movementAccount.setAmount(amountToDeposit);
+        movementAccount.setMovementDate(LocalDate.now());
+
+        movementsRepository.save(movementAccount);
+
+        return accountDeposit;
     }
 
     @Override
