@@ -1,7 +1,7 @@
 openapi: 3.0.0
 info:
   title: Accounts
-  description: 
+  description:
     This application allows you to obtain the information about the accounts.
   version: 1.0.0
 externalDocs:
@@ -36,7 +36,7 @@ paths:
                 $ref: '#/components/schemas/Account'
         '400':
           description: Credit request rejected
-          
+
   /account/{accountNumber}/retire:
     patch:
       tags:
@@ -55,20 +55,20 @@ paths:
           in: query
           description: Amount of money that you want to retire of your account.
           required: true
-          schema: 
+          schema:
             type: number
             format: double
-            
+
       responses:
         '200':
           description: Your retire of money was made successfully
           content:
             application/json:
-              schema: 
+              schema:
                 $ref: '#/components/schemas/AccountRetireDeposit'
         '400':
           description: Invalid request, check your amount of your account.
-          
+
   /account/{accountNumber}/deposit:
     patch:
       tags:
@@ -87,16 +87,16 @@ paths:
           in: query
           description: Amount of money that you want to deposit of your account.
           required: true
-          schema: 
+          schema:
             type: number
             format: double
-            
+
       responses:
         '200':
           description: Your deposit of money was made successfully
           content:
             application/json:
-              schema: 
+              schema:
                 $ref: '#/components/schemas/AccountRetireDeposit'
         '400':
           description: Invalid request
@@ -120,7 +120,7 @@ paths:
           description: Your request was made successfully
           content:
             application/json:
-              schema: 
+              schema:
                 $ref: '#/components/schemas/Account'
         '400':
           description: Check the information of the account.
@@ -131,7 +131,7 @@ paths:
         - accounts
       summary: Allows you to add the information of the signers of an account.
       description: Allows you to add the information of the signers of a personal or company account.
-      operationId: addSignersAccount
+      operationId: addSigners
       parameters:
         - name: accountNumber
           in: path
@@ -152,10 +152,10 @@ paths:
           description: Your update of signers was made successfully
           content:
             application/json:
-              schema: 
+              schema:
                 $ref: '#/components/schemas/Account'
-                
-          
+
+
 components:
   schemas:
     SignersRequired:
@@ -164,7 +164,7 @@ components:
         - document
       type: object
       properties:
-        fullName: 
+        fullName:
           type: string
         document:
           type: string
@@ -172,9 +172,7 @@ components:
       required:
         - accountType
         - accountAmount
-        - accountCommission
-        - unlimitedMovements
-        - customerDocument
+        - clientDocument
         - titulars
       type: object
       properties:
@@ -187,14 +185,7 @@ components:
         accountAmount:
           type: number
           format: double
-        accountCommission:
-          type: number
-          format: double
-        unlimitedMovements:
-          type: boolean
-        quantityMovements:
-          type: integer
-        customerDocument:
+        clientDocument:
           type: string
         titulars:
           items:
@@ -222,51 +213,10 @@ components:
     Account:
       type: object
       properties:
-        accountNumber:
-          type: string
-        accountType:
-          type: string
-        accountAmount:
-          type: number
-          format: double
-        accountCommission:
-          type: number
-          format: double
-        unlimitedMovements:
-          type: boolean
-        quantityMovements:
-          type: integer
-        customerDocument:
-          type: string
-        titulars:
-          type: array
-          items:
-            $ref: '#/components/schemas/TitularsOut'
-        signers:
-          type: array
-          items:
-            $ref: '#/components/schemas/Signers'
-        creationDate:
-          type: string
-          format: date
-    TitularsOut:
-      type: object
-      properties:
-        document:
-          type: string
-        name:
+        message:
           type: string
     AccountRetireDeposit:
       type: object
       properties:
-        accountNumber:
+        message:
           type: string
-        accountType:
-          type: string
-        accountAmount:
-          type: number
-          format: double
-      
-          
-        
-            

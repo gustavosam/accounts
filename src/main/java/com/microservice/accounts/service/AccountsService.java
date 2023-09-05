@@ -1,50 +1,54 @@
 package com.microservice.accounts.service;
 
 import com.microservice.accounts.documents.AccountsDocuments;
-import com.microservice.accounts.model.*;
-import com.microservice.accounts.util.complementary.CustomersComplementary;
-
+import com.microservice.accounts.model.Account;
+import com.microservice.accounts.model.AccountRequest;
+import com.microservice.accounts.model.Signers;
+import com.microservice.accounts.model.SignersRequired;
+import com.microservice.accounts.model.TitularsIn;
+import com.microservice.accounts.util.AccountRetireDepositDto;
+import com.microservice.accounts.util.CardDto;
+import com.microservice.accounts.util.ClientDto;
 import java.util.List;
 
+/**
+ * Esta interfaz contiene los métodos que serán implementados por AccountServiceImpl.
+ * */
 public interface AccountsService {
 
-    Account createAccount(AccountRequest accountRequest);
+  Account createAccount(AccountRequest accountRequest);
 
-    CustomersComplementary getCustomer(String customerDocument);
+  ClientDto getClient(String customerDocument);
 
-    Boolean payCommission(String accountType);
+  List<AccountsDocuments> getAccounts(String customerDocument);
 
-    Boolean ilimitMovements(String accountType);
+  Boolean existAccountAhorro(List<AccountsDocuments> accountsDocuments);
 
-    List<AccountsDocuments> getAccountsByCustomer(String customerDocument);
+  Boolean existAccountCorriente(List<AccountsDocuments> accountsDocuments);
 
-    Boolean existAccountAhorro(List<AccountsDocuments> accountsDocuments);
+  Boolean listTitularIsCorrect(List<TitularsIn> titulars);
 
-    Boolean existAccountCorriente(List<AccountsDocuments> accountsDocuments);
+  Boolean justOneTitularPersonal(List<TitularsIn> titulars);
 
-    Boolean listTitularIsCorrect(List<TitularsIn> titulars);
+  Boolean validateIfYouCanRetire(AccountsDocuments accountsDocuments, Double amount);
 
-    Boolean justATitularPersonal(List<TitularsIn> titulars);
+  AccountsDocuments getAccount(String accountNumber);
 
-    Boolean validateIfYouCanRetireCorriente(AccountsDocuments accountsDocuments, Double amount);
+  AccountRetireDepositDto retireAccount(AccountsDocuments accountsDocuments, Double amountToRetire);
 
-    Boolean validateIfYouCanRetire(AccountsDocuments accountsDocuments, Double amount);
+  Boolean validateIfYouCanDeposit(Double commission, Double amountDeposit);
 
-    AccountsDocuments getAccount(String accountNumber);
+  AccountRetireDepositDto depositAccount(AccountsDocuments accounts, Double amountToDeposit);
 
-    AccountRetireDeposit retireAccount(AccountsDocuments accountsDocuments, Double amountToRetire);
+  Boolean canAddSigners(AccountsDocuments accounts, List<SignersRequired> signers);
 
-    Boolean validateIfYouCanDeposit(AccountsDocuments accountsDocuments);
+  Account addSigner(AccountsDocuments accountsDocuments, List<SignersRequired> signersRequired);
 
-    AccountRetireDeposit depositAccount(AccountsDocuments accountsDocuments, Double amountToDeposit);
+  Boolean validateQuantitySignersCreationAccount(List<Signers> signersRequired);
 
-    Boolean validateIfYouCanAddSigners(AccountsDocuments accountsDocuments, List<SignersRequired> signersRequired);
+  Boolean listSignersIsCorrect(List<Signers> signersRequired);
 
-    Account addSigner(AccountsDocuments accountsDocuments, List<SignersRequired> signersRequired);
+  Boolean listSignersRequiredIsCorrect(List<SignersRequired> signers);
 
-    Boolean validateQuantitySignersCreationAccount(List<Signers> signersRequired);
-
-    Boolean listSignersIsCorrect(List<Signers> signersRequired);
-
-    Boolean listAddedSignersIsCorrect(List<SignersRequired> signersRequired);
+  List<CardDto> getCreditCards(String clientDocument);
 }

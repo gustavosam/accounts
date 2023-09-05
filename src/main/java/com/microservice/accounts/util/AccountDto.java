@@ -1,37 +1,34 @@
-package com.microservice.accounts.documents;
+package com.microservice.accounts.util;
 
+import com.microservice.accounts.model.Account;
 import com.microservice.accounts.util.complementary.SignersComplementary;
 import com.microservice.accounts.util.complementary.TitularsComplementary;
 import java.time.LocalDate;
 import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
-
 
 /**
- * Esta clase representa a la colleción accounts en mongo db.
+ * Esta clase extiende de Account y añade atributos para mostrar al cliente.
  * */
-@Document(collection = "accounts")
 @Getter
 @Setter
-public class AccountsDocuments {
+public class AccountDto extends Account {
 
-  @Id
   private String accountNumber;
 
   private String accountType;
 
   private Double accountAmount;
 
-  private Integer freeMovements;
+  private Integer quantityMovements;
 
   private String clientDocument;
+
+  private LocalDate creationDate;
 
   private List<TitularsComplementary> titulars;
 
   private List<SignersComplementary> signers;
 
-  private LocalDate accountCreationDate;
 }
