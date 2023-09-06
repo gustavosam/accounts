@@ -9,6 +9,7 @@ import com.microservice.accounts.model.TitularsIn;
 import com.microservice.accounts.util.AccountRetireDepositDto;
 import com.microservice.accounts.util.CardDto;
 import com.microservice.accounts.util.ClientDto;
+import com.microservice.accounts.util.TransferDto;
 import java.util.List;
 
 /**
@@ -36,6 +37,9 @@ public interface AccountsService {
 
   AccountRetireDepositDto retireAccount(AccountsDocuments accountsDocuments, Double amountToRetire);
 
+  TransferDto transfer(AccountsDocuments accountOri, AccountsDocuments accountDest,
+                       Double amountTransfer);
+
   Boolean validateIfYouCanDeposit(Double commission, Double amountDeposit);
 
   AccountRetireDepositDto depositAccount(AccountsDocuments accounts, Double amountToDeposit);
@@ -51,4 +55,6 @@ public interface AccountsService {
   Boolean listSignersRequiredIsCorrect(List<SignersRequired> signers);
 
   List<CardDto> getCreditCards(String clientDocument);
+
+  List<Account> getAccountsByClient(String document);
 }

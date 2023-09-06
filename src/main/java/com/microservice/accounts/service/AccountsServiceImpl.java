@@ -17,6 +17,7 @@ import com.microservice.accounts.util.AccountRetireDepositDto;
 import com.microservice.accounts.util.CardDto;
 import com.microservice.accounts.util.ClientDto;
 import com.microservice.accounts.util.Constants;
+import com.microservice.accounts.util.TransferDto;
 import com.microservice.accounts.util.complementary.SignersComplementary;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -25,6 +26,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
 
 /**
  * Esta clase contiene la lógica de negocio para las cuentas.
@@ -57,7 +59,7 @@ public class AccountsServiceImpl implements AccountsService {
 
     movementFeignClient.saveMovement(MapperMovement.setValues(
             accountNew.getAccountAmount(), accountNew.getClientDocument(),
-            accountNew.getAccountNumber(), Constants.ACCOUNT_CREATED, 0.0
+            accountNew.getAccountNumber(), account.getAccountType(), Constants.ACCOUNT_CREATED, 0.0
     ));
 
     return accountNew;
@@ -141,10 +143,49 @@ public class AccountsServiceImpl implements AccountsService {
 
     movementFeignClient.saveMovement(MapperMovement.setValues(
         amountToRetire, account.getClientDocument(),
-        account.getAccountNumber(), Constants.ACCOUNT_RETIRE, comission
+        account.getAccountNumber(), account.getAccountType(), Constants.ACCOUNT_RETIRE, comission
     ));
 
     return accountRetired;
+  }
+
+  @Override
+  public TransferDto transfer(AccountsDocuments accountOri, AccountsDocuments accountDest,
+                              Double amountTransfer) {
+    double comission = 0.0;
+
+    if (accountOri.getFreeMovements() == 0) {
+      comission = 5.0;
+    }
+
+    if (accountOri.getFreeMovements() != 0) {
+      accountOri.setFreeMovements(accountOri.getFreeMovements() - 1);
+    }
+
+    accountOri.setAccountAmount(accountOri.getAccountAmount() - amountTransfer  - comission);
+    accountDest.setAccountAmount(accountDest.getAccountAmount() + amountTransfer);
+
+    accountRepository.save(accountOri);
+    accountRepository.save(accountDest);
+
+    movementFeignClient.saveMovement(MapperMovement.setValues(
+            amountTransfer, accountOri.getClientDocument(),
+            accountOri.getAccountNumber(), accountOri.getAccountType(),
+            Constants.TRANSFER_RET, comission
+    ));
+
+    movementFeignClient.saveMovement(MapperMovement.setValues(
+            amountTransfer, accountDest.getClientDocument(),
+            accountDest.getAccountNumber(), accountDest.getAccountType(),
+            Constants.TRANSFER_DEP, 0.0
+    ));
+
+    TransferDto transferDto = new TransferDto();
+    transferDto.setAmount(amountTransfer);
+    transferDto.setAccountOrigin(accountOri.getAccountNumber());
+    transferDto.setAccountDestination(accountDest.getAccountNumber());
+
+    return transferDto;
   }
 
   @Override
@@ -173,7 +214,7 @@ public class AccountsServiceImpl implements AccountsService {
 
     movementFeignClient.saveMovement(MapperMovement.setValues(
         amountToDeposit, account.getClientDocument(),
-        account.getAccountNumber(), Constants.ACCOUNT_DEPOSIT, comission
+        account.getAccountNumber(), account.getAccountType(), Constants.ACCOUNT_DEPOSIT, comission
     ));
 
     return accountDeposit;
@@ -235,5 +276,17 @@ public class AccountsServiceImpl implements AccountsService {
   @Override
   public List<CardDto> getCreditCards(String clientDocument) {
     return creditCardFeignClient.getCreditCards(clientDocument);
+  }
+
+  @Override
+  public List<Account> getAccountsByClient(String document) {
+    List<AccountsDocuments> accounts = accountRepository.findByClientDocument(document);
+
+    if (accounts.isEmpty()) {
+      return new ArrayList<>();
+    }
+
+    return AccountMapper.mapListAccountsDocsToListAccounts(accounts);
+
   }
 }

@@ -21,4 +21,6 @@ public class MovementDto {
 
   private Double commission;
 
+  private String accountType;
+
 }

@@ -6,6 +6,7 @@ import com.microservice.accounts.model.Account;
 import com.microservice.accounts.model.AccountRequest;
 import com.microservice.accounts.model.AccountRetireDeposit;
 import com.microservice.accounts.model.SignersRequired;
+import com.microservice.accounts.model.TransferRequest;
 import com.microservice.accounts.service.AccountsService;
 import com.microservice.accounts.service.mapper.AccountMapper;
 import com.microservice.accounts.util.ClientDto;
@@ -17,6 +18,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+
 
 /**
  * Esta clase implementa los métodos generados por open api.
@@ -283,5 +285,47 @@ public class AccountDelegateImpl implements AccountApiDelegate {
             .status(HttpStatus.OK)
             .body(AccountMapper
                     .mapAccountDocToAccountDto(accountsService.getAccount(accountNumber)));
+  }
+
+  @Override
+  public ResponseEntity<Account> transferAccount(TransferRequest transferRequest) {
+
+    if (transferRequest.getAccountOrigin() == null) {
+      return ResponseEntity.badRequest().body(ErrorC.getInstance(Constants.ACCOUNT_ORIGIN_EMPTY));
+    }
+
+    if (transferRequest.getAccountDestination() == null) {
+      return ResponseEntity.badRequest().body(ErrorC.getInstance(Constants.ACCOUNT_DEST_EMPTY));
+    }
+
+    if (transferRequest.getAmount() == null || transferRequest.getAmount() == 0) {
+      return ResponseEntity.badRequest().body(ErrorC.getInstance(Constants.AMOUNT_TRANS_EMPTY));
+    }
+
+    AccountsDocuments accountOri = accountsService.getAccount(transferRequest.getAccountOrigin());
+
+    AccountsDocuments accountDest = accountsService
+            .getAccount(transferRequest.getAccountDestination());
+
+    if (accountOri.getAccountNumber() == null) {
+      return ResponseEntity.badRequest().body(ErrorC.getInstance(Constants.ACCOUNT_ORI_NOT_EXIST));
+    }
+
+    if (accountDest.getAccountNumber() == null) {
+      return ResponseEntity.badRequest().body(ErrorC.getInstance(Constants.ACCOUNT_DEST_NOT_EXIST));
+    }
+
+    if (!accountsService.validateIfYouCanRetire(accountOri, transferRequest.getAmount())) {
+      return ResponseEntity.badRequest().body(ErrorC.getInstance(Constants.NOT_MONEY));
+    }
+
+    return ResponseEntity
+            .status(HttpStatus.OK)
+            .body(accountsService.transfer(accountOri, accountDest, transferRequest.getAmount()));
+  }
+
+  @Override
+  public ResponseEntity<List<Account>> getAccountsByClient(String document) {
+    return ResponseEntity.status(HttpStatus.OK).body(accountsService.getAccountsByClient(document));
   }
 }

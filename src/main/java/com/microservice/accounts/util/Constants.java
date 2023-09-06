@@ -54,6 +54,10 @@ public class Constants {
 
   public static final String ACCOUNT_NOT_EXIST = "Este número de cuenta no existe";
 
+  public static final String ACCOUNT_ORI_NOT_EXIST = "Cuenta de origen no existe";
+
+  public static final String ACCOUNT_DEST_NOT_EXIST = "Cuenta de destino no existe";
+
   public static final String CANT_HAVE_SIGNERS = "CuentaPersonal, no puede agregar firmantes";
 
   public static final String MAX_SIGNERS = "No puedes registrar más de 4 firmantes";
@@ -70,6 +74,16 @@ public class Constants {
   public static final String NOT_CREDIT_CARD = "VIP Y PYME Deben tener una creditCard";
 
   public static final String VIP_AMOUNT_MINOR = "Eres un cliente vip el monto mínimo es 500";
+
+  public static final String ACCOUNT_ORIGIN_EMPTY = "La cuenta de origen no puede estar vacía";
+
+  public static final String ACCOUNT_DEST_EMPTY = "La cuenta de destino no puede estar vacía";
+
+  public static final String AMOUNT_TRANS_EMPTY = "El monto no puede estar vacío o ser 0";
+
+  public static final String TRANSFER_RET = "Transf.Retiro";
+
+  public static final String TRANSFER_DEP = "Transf.Deposito";
 
   public static final double COMMISSION = 5.00;
 

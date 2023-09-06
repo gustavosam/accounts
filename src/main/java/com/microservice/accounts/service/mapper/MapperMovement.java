@@ -15,11 +15,13 @@ public class MapperMovement {
    * Se obtienen todos los valores y se asignan a un objeto MovementsDocuments.
    * */
   public static MovementDto setValues(Double amount, String clientDocument,
-                                      String accountNumber, String movementType, Double commision) {
+                                      String accountNumber, String accountType,
+                                      String movementType, Double commision) {
 
     MovementDto movement = new MovementDto();
     movement.setAmount(amount);
     movement.setClientDocument(clientDocument);
+    movement.setAccountType(accountType);
     movement.setAccountNumber(accountNumber);
     movement.setMovementType(movementType);
     movement.setCommission(commision);
