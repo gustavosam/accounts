@@ -67,9 +67,9 @@ public class Constants {
   public static final String SIGNERS_INFORMATION_INVALID = "Verifica los datos de tus firmantes";
   public static final String NOT_MONEY = "Saldo insuficiente";
 
-  public static final String PERSONAL_VIP = "PERSONALVIP";
+  public static final String PERSONAL_VIP = "VIP";
 
-  public static final String COMPANY_PYME = "COMPANYPYME";
+  public static final String COMPANY_PYME = "PYME";
 
   public static final String NOT_CREDIT_CARD = "VIP Y PYME Deben tener una creditCard";
 

@@ -52,7 +52,7 @@ public class AccountsServiceImpl implements AccountsService {
 
     AccountsDocuments account = AccountMapper.mapAccountRequestToAccountsDocuments(accountRequest);
     account.setAccountCreationDate(LocalDate.now());
-    account.setFreeMovements(4);
+    account.setFreeMovements(20);
 
     AccountDto accountNew = AccountMapper
             .mapAccountDocToAccountDto(accountRepository.save(account));

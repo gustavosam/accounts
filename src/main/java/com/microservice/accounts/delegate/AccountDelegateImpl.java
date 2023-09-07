@@ -84,28 +84,32 @@ public class AccountDelegateImpl implements AccountApiDelegate {
               .body(ErrorC.getInstance(Constants.CANT_HAVE_SIGNERS));
     }
 
-    if (customer.getClientType().equalsIgnoreCase(Constants.COMPANY)
+    if ((customer.getClientType().equalsIgnoreCase(Constants.COMPANY)
+            || customer.getClientType().equalsIgnoreCase(Constants.COMPANY_PYME))
             && (account.getAccountType().getValue().equalsIgnoreCase(Constants.SAVING_ACCOUNT))) {
 
       return ResponseEntity.badRequest()
               .body(ErrorC.getInstance(Constants.CANT_HAVE_SAVING_ACCOUNT));
     }
 
-    if (customer.getClientType().equalsIgnoreCase(Constants.COMPANY)
+    if ((customer.getClientType().equalsIgnoreCase(Constants.COMPANY)
+            || customer.getClientType().equalsIgnoreCase(Constants.COMPANY_PYME))
             && account.getAccountType().getValue().equalsIgnoreCase(Constants.FIXED_TERM_ACCOUNT)) {
 
       return ResponseEntity.badRequest()
               .body(ErrorC.getInstance(Constants.CANT_HAVE_FIXED_TERM_ACCOUNT));
     }
 
-    if (customer.getClientType().equalsIgnoreCase(Constants.COMPANY)
+    if ((customer.getClientType().equalsIgnoreCase(Constants.COMPANY)
+            || customer.getClientType().equalsIgnoreCase(Constants.COMPANY_PYME))
             &&  account.getSigners() != null
             && !accountsService.listSignersIsCorrect(account.getSigners())) {
 
       return ResponseEntity.badRequest().body(ErrorC.getInstance(Constants.SIGNERS_INCORRECT));
     }
 
-    if (customer.getClientType().equalsIgnoreCase(Constants.COMPANY)
+    if ((customer.getClientType().equalsIgnoreCase(Constants.COMPANY)
+            || customer.getClientType().equalsIgnoreCase(Constants.COMPANY_PYME))
             && account.getSigners() != null
             && accountsService.validateQuantitySignersCreationAccount(account.getSigners())) {
 
