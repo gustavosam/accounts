@@ -145,7 +145,6 @@ paths:
         content:
           application/json:
             schema:
-              items:
                 $ref: '#/components/schemas/SignersRequired'
       responses:
         '200':
@@ -205,6 +204,12 @@ paths:
 components:
   schemas:
     SignersRequired:
+      type: object
+      properties:
+        signers:
+          items:
+            $ref: '#/components/schemas/SignerList'
+    SignerList:
       required:
         - fullName
         - document

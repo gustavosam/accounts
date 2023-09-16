@@ -1,15 +1,11 @@
 package com.microservice.accounts.service;
 
 import com.microservice.accounts.documents.AccountsDocuments;
-import com.microservice.accounts.model.Account;
-import com.microservice.accounts.model.AccountRequest;
-import com.microservice.accounts.model.Signers;
-import com.microservice.accounts.model.SignersRequired;
-import com.microservice.accounts.model.TitularsIn;
-import com.microservice.accounts.util.AccountRetireDepositDto;
-import com.microservice.accounts.util.CardDto;
-import com.microservice.accounts.util.ClientDto;
-import com.microservice.accounts.util.TransferDto;
+import com.microservice.accounts.model.*;
+import com.microservice.accounts.util.*;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
 import java.util.List;
 
 /**
@@ -17,15 +13,15 @@ import java.util.List;
  * */
 public interface AccountsService {
 
-  Account createAccount(AccountRequest accountRequest);
+  Mono<AccountDto> createAccount(AccountRequest accountRequest);
 
-  ClientDto getClient(String customerDocument);
+  Mono<ClientDto> getClient(String customerDocument);
 
-  List<AccountsDocuments> getAccounts(String customerDocument);
+  Flux<AccountsDocuments> getAccounts(String customerDocument);
 
-  Boolean existAccountAhorro(List<AccountsDocuments> accountsDocuments);
+  Mono<Boolean> existAccountAhorro(Flux<AccountsDocuments> accountsDocuments);
 
-  Boolean existAccountCorriente(List<AccountsDocuments> accountsDocuments);
+  Mono<Boolean> existAccountCorriente(Flux<AccountsDocuments> accountsDocuments);
 
   Boolean listTitularIsCorrect(List<TitularsIn> titulars);
 
@@ -33,28 +29,28 @@ public interface AccountsService {
 
   Boolean validateIfYouCanRetire(AccountsDocuments accountsDocuments, Double amount);
 
-  AccountsDocuments getAccount(String accountNumber);
+  Mono<AccountsDocuments> getAccount(String accountNumber);
 
-  AccountRetireDepositDto retireAccount(AccountsDocuments accountsDocuments, Double amountToRetire);
+  Mono<AccountRetireDepositDto> retireAccount(AccountsDocuments accountsDocuments, Double amountToRetire);
 
-  TransferDto transfer(AccountsDocuments accountOri, AccountsDocuments accountDest,
+  Mono<TransferDto> transfer(AccountsDocuments accountOri, AccountsDocuments accountDest,
                        Double amountTransfer);
 
   Boolean validateIfYouCanDeposit(Double commission, Double amountDeposit);
 
-  AccountRetireDepositDto depositAccount(AccountsDocuments accounts, Double amountToDeposit);
+  Mono<AccountRetireDepositDto> depositAccount(AccountsDocuments accounts, Double amountToDeposit);
 
-  Boolean canAddSigners(AccountsDocuments accounts, List<SignersRequired> signers);
+  Boolean canAddSigners(AccountsDocuments accounts, List<SignerList> signers);
 
-  Account addSigner(AccountsDocuments accountsDocuments, List<SignersRequired> signersRequired);
+  Mono<Account> addSigner(AccountsDocuments accountsDocuments, List<SignerList> signersRequired);
 
   Boolean validateQuantitySignersCreationAccount(List<Signers> signersRequired);
 
   Boolean listSignersIsCorrect(List<Signers> signersRequired);
 
-  Boolean listSignersRequiredIsCorrect(List<SignersRequired> signers);
+  Boolean listSignersRequiredIsCorrect(List<SignerList> signers);
 
-  List<CardDto> getCreditCards(String clientDocument);
+  Flux<CardDto> getCreditCards(String clientDocument);
 
-  List<Account> getAccountsByClient(String document);
+  Flux<Account> getAccountsByClient(String document);
 }

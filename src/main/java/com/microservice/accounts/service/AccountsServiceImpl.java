@@ -1,14 +1,7 @@
 package com.microservice.accounts.service;
 
 import com.microservice.accounts.documents.AccountsDocuments;
-import com.microservice.accounts.feignclient.CreditCardFeignClient;
-import com.microservice.accounts.feignclient.CustomerFeignClient;
-import com.microservice.accounts.feignclient.MovementFeignClient;
-import com.microservice.accounts.model.Account;
-import com.microservice.accounts.model.AccountRequest;
-import com.microservice.accounts.model.Signers;
-import com.microservice.accounts.model.SignersRequired;
-import com.microservice.accounts.model.TitularsIn;
+import com.microservice.accounts.model.*;
 import com.microservice.accounts.repository.AccountRepository;
 import com.microservice.accounts.service.mapper.AccountMapper;
 import com.microservice.accounts.service.mapper.MapperMovement;
@@ -23,10 +16,15 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
+import com.microservice.accounts.webclient.ClientWebClient;
+import com.microservice.accounts.webclient.CreditCardWebClient;
+import com.microservice.accounts.webclient.MovementWebClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 /**
  * Esta clase contiene la lógica de negocio para las cuentas.
@@ -39,54 +37,62 @@ public class AccountsServiceImpl implements AccountsService {
   private AccountRepository accountRepository;
 
   @Autowired
-  private CustomerFeignClient customerFeignClient;
+  private ClientWebClient clientWebClient;
 
   @Autowired
-  private MovementFeignClient movementFeignClient;
+  private MovementWebClient movementWebClient;
 
   @Autowired
-  private CreditCardFeignClient creditCardFeignClient;
+  private CreditCardWebClient creditCardWebClient;
 
   @Override
-  public Account createAccount(AccountRequest accountRequest) {
+  public Mono<AccountDto> createAccount(AccountRequest accountRequest) {
 
     AccountsDocuments account = AccountMapper.mapAccountRequestToAccountsDocuments(accountRequest);
     account.setAccountCreationDate(LocalDate.now());
     account.setFreeMovements(20);
 
-    AccountDto accountNew = AccountMapper
-            .mapAccountDocToAccountDto(accountRepository.save(account));
+    Mono<AccountsDocuments> accountMono = accountRepository.save(account);
 
-    movementFeignClient.saveMovement(MapperMovement.setValues(
-            accountNew.getAccountAmount(), accountNew.getClientDocument(),
-            accountNew.getAccountNumber(), account.getAccountType(), Constants.ACCOUNT_CREATED, 0.0
-    ));
+    return accountMono.map(accountsDocuments -> {
+      AccountDto accountDto = AccountMapper.mapAccountDocToAccountDto(accountsDocuments);
 
-    return accountNew;
+      movementWebClient.saveMovement(MapperMovement.setValues(
+              accountDto.getAccountAmount(), accountDto.getClientDocument(),
+              accountDto.getAccountNumber(), accountDto.getAccountType(), Constants.ACCOUNT_CREATED, 0.0
+      )).subscribe();
+
+      return accountDto;
+
+    });
   }
 
   @Override
-  public ClientDto getClient(String clientDocument) {
+  public Mono<ClientDto> getClient(String clientDocument) {
 
-    return customerFeignClient.getClient(clientDocument);
+    return clientWebClient.getClient(clientDocument);
   }
 
   @Override
-  public List<AccountsDocuments> getAccounts(String customerDocument) {
+  public Flux<AccountsDocuments> getAccounts(String customerDocument) {
     return accountRepository.findByClientDocument(customerDocument);
   }
 
   @Override
-  public Boolean existAccountAhorro(List<AccountsDocuments> accountsDocuments) {
+  public Mono<Boolean> existAccountAhorro(Flux<AccountsDocuments> accountsDocuments) {
 
-    return accountsDocuments.stream()
-            .anyMatch(account -> account.getAccountType().equalsIgnoreCase("AHORRO"));
+    return accountsDocuments
+            .filter(account -> account.getAccountType().equalsIgnoreCase("AHORRO"))
+            .hasElements()
+            .defaultIfEmpty(false);
   }
 
   @Override
-  public Boolean existAccountCorriente(List<AccountsDocuments> accountsDocuments) {
-    return accountsDocuments.stream()
-            .anyMatch(account -> account.getAccountType().equalsIgnoreCase("CORRIENTE"));
+  public Mono<Boolean> existAccountCorriente(Flux<AccountsDocuments> accountsDocuments) {
+    return accountsDocuments
+            .filter(account -> account.getAccountType().equalsIgnoreCase("CORRIENTE"))
+            .hasElements()
+            .defaultIfEmpty(false);
   }
 
   @Override
@@ -119,73 +125,85 @@ public class AccountsServiceImpl implements AccountsService {
   }
 
   @Override
-  public AccountsDocuments getAccount(String accountNumber) {
-    return accountRepository.findById(accountNumber).orElse(new AccountsDocuments());
+  public Mono<AccountsDocuments> getAccount(String accountNumber) {
+    return accountRepository.findById(accountNumber)
+            .defaultIfEmpty(new AccountsDocuments());
   }
 
   @Override
-  public AccountRetireDepositDto retireAccount(AccountsDocuments account, Double amountToRetire) {
-    double comission = 0.0;
+  public Mono<AccountRetireDepositDto> retireAccount(AccountsDocuments account, Double amountToRetire) {
+    AtomicReference<Double> comission = new AtomicReference<>(0.0);
 
     if (account.getFreeMovements() == 0) {
-      comission = 5.0;
+      comission.set(5.0);
     }
 
     if (account.getFreeMovements() != 0) {
       account.setFreeMovements(account.getFreeMovements() - 1);
     }
 
+    account.setAccountAmount(account.getAccountAmount() - amountToRetire  - comission.get());
 
-    account.setAccountAmount(account.getAccountAmount() - amountToRetire  - comission);
+    Mono<AccountsDocuments> accountsDocumentsMono = accountRepository.save(account);
 
-    AccountRetireDepositDto accountRetired = AccountMapper
-            .mapAccountDocToAccountRetDep(accountRepository.save(account));
+    return accountsDocumentsMono.map(accountDoc -> {
 
-    movementFeignClient.saveMovement(MapperMovement.setValues(
-        amountToRetire, account.getClientDocument(),
-        account.getAccountNumber(), account.getAccountType(), Constants.ACCOUNT_RETIRE, comission
-    ));
+      AccountRetireDepositDto accountRetired = AccountMapper.mapAccountDocToAccountRetDep(accountDoc);
 
-    return accountRetired;
+      movementWebClient.saveMovement(MapperMovement.setValues(
+              amountToRetire, accountDoc.getClientDocument(),
+              accountDoc.getAccountNumber(), accountDoc.getAccountType(), Constants.ACCOUNT_RETIRE, comission.get()
+      )).subscribe();
+      return accountRetired;
+    });
+
   }
 
   @Override
-  public TransferDto transfer(AccountsDocuments accountOri, AccountsDocuments accountDest,
-                              Double amountTransfer) {
-    double comission = 0.0;
+  public Mono<TransferDto> transfer(AccountsDocuments accountOri, AccountsDocuments accountDest,
+                                    Double amountTransfer) {
+    AtomicReference<Double> comission = new AtomicReference<>(0.0);
 
     if (accountOri.getFreeMovements() == 0) {
-      comission = 5.0;
+      comission.set(5.0);
     }
 
     if (accountOri.getFreeMovements() != 0) {
       accountOri.setFreeMovements(accountOri.getFreeMovements() - 1);
     }
 
-    accountOri.setAccountAmount(accountOri.getAccountAmount() - amountTransfer  - comission);
+    accountOri.setAccountAmount(accountOri.getAccountAmount() - amountTransfer  - comission.get());
     accountDest.setAccountAmount(accountDest.getAccountAmount() + amountTransfer);
 
-    accountRepository.save(accountOri);
-    accountRepository.save(accountDest);
+    Mono<AccountsDocuments> accountOriMono = accountRepository.save(accountOri);
+    Mono<AccountsDocuments> accountDesMono = accountRepository.save(accountDest);
 
-    movementFeignClient.saveMovement(MapperMovement.setValues(
-            amountTransfer, accountOri.getClientDocument(),
-            accountOri.getAccountNumber(), accountOri.getAccountType(),
-            Constants.TRANSFER_RET, comission
-    ));
+    return accountOriMono.zipWith(accountDesMono).map(tuple -> {
 
-    movementFeignClient.saveMovement(MapperMovement.setValues(
-            amountTransfer, accountDest.getClientDocument(),
-            accountDest.getAccountNumber(), accountDest.getAccountType(),
-            Constants.TRANSFER_DEP, 0.0
-    ));
+      AccountsDocuments ori = tuple.getT1();
+      AccountsDocuments des = tuple.getT2();
 
-    TransferDto transferDto = new TransferDto();
-    transferDto.setAmount(amountTransfer);
-    transferDto.setAccountOrigin(accountOri.getAccountNumber());
-    transferDto.setAccountDestination(accountDest.getAccountNumber());
+      movementWebClient.saveMovement(MapperMovement.setValues(
+              amountTransfer, ori.getClientDocument(),
+              ori.getAccountNumber(), ori.getAccountType(),
+              Constants.TRANSFER_RET, comission.get()
+      )).subscribe();
 
-    return transferDto;
+      movementWebClient.saveMovement(MapperMovement.setValues(
+              amountTransfer, des.getClientDocument(),
+              des.getAccountNumber(), des.getAccountType(),
+              Constants.TRANSFER_DEP, 0.0
+      )).subscribe();
+
+      TransferDto transferDto = new TransferDto();
+      transferDto.setAmount(amountTransfer);
+      transferDto.setAccountOrigin(accountOri.getAccountNumber());
+      transferDto.setAccountDestination(accountDest.getAccountNumber());
+
+      return transferDto;
+
+    });
+
   }
 
   @Override
@@ -195,44 +213,51 @@ public class AccountsServiceImpl implements AccountsService {
   }
 
   @Override
-  public AccountRetireDepositDto depositAccount(AccountsDocuments account, Double amountToDeposit) {
+  public Mono<AccountRetireDepositDto> depositAccount(AccountsDocuments account, Double amountToDeposit) {
 
-    double comission = 0.0;
+    AtomicReference<Double> comission = new AtomicReference<>(0.0);
 
     if (account.getFreeMovements() == 0) {
-      comission = 5.0;
+      comission.set(5.0);
     }
 
     if (account.getFreeMovements() != 0) {
       account.setFreeMovements(account.getFreeMovements() - 1);
     }
 
-    account.setAccountAmount(account.getAccountAmount() + amountToDeposit - comission);
+    account.setAccountAmount(account.getAccountAmount() + amountToDeposit - comission.get());
 
-    AccountRetireDepositDto accountDeposit = AccountMapper
-            .mapAccountDocToAccountRetDep(accountRepository.save(account));
+    Mono<AccountsDocuments> accountsDocumentsMono = accountRepository.save(account);
 
-    movementFeignClient.saveMovement(MapperMovement.setValues(
-        amountToDeposit, account.getClientDocument(),
-        account.getAccountNumber(), account.getAccountType(), Constants.ACCOUNT_DEPOSIT, comission
-    ));
+    return accountsDocumentsMono.map(accountDoc -> {
 
-    return accountDeposit;
+      AccountRetireDepositDto accountDeposit = AccountMapper.mapAccountDocToAccountRetDep(accountDoc);
+
+      movementWebClient.saveMovement(MapperMovement.setValues(
+              amountToDeposit, accountDoc.getClientDocument(),
+              accountDoc.getAccountNumber(), accountDoc.getAccountType(), Constants.ACCOUNT_DEPOSIT, comission.get()
+      )).subscribe();
+
+      return accountDeposit;
+
+    });
+
   }
 
   @Override
-  public Boolean canAddSigners(AccountsDocuments accounts, List<SignersRequired> signers) {
+  public Boolean canAddSigners(AccountsDocuments accounts, List<SignerList> signers) {
 
     return accounts.getSigners().size() + signers.size() <= 4;
   }
 
   @Override
-  public Account addSigner(AccountsDocuments account, List<SignersRequired> signersRequired) {
+  public Mono<Account> addSigner(AccountsDocuments account, List<SignerList> signersRequired) {
 
     List<SignersComplementary> newSigners = signersRequired.stream()
             .filter(Objects::nonNull)
             .map(AccountMapper::mapSignerReToSignerComplementary)
             .collect(Collectors.toList());
+
     List<SignersComplementary> signers = account.getSigners();
 
     if (signers == null) {
@@ -245,7 +270,9 @@ public class AccountsServiceImpl implements AccountsService {
 
     account.setSigners(unionSigners);
 
-    return AccountMapper.mapAccountDocToAccountDto(accountRepository.save(account));
+    Mono<AccountsDocuments> accountsDocumentsMono = accountRepository.save(account);
+
+    return accountsDocumentsMono.map(AccountMapper::mapAccountDocToAccountDto);
   }
 
   @Override
@@ -264,7 +291,7 @@ public class AccountsServiceImpl implements AccountsService {
   }
 
   @Override
-  public Boolean listSignersRequiredIsCorrect(List<SignersRequired> signers) {
+  public Boolean listSignersRequiredIsCorrect(List<SignerList> signers) {
     if (signers.isEmpty()) {
       return false;
     }
@@ -274,19 +301,17 @@ public class AccountsServiceImpl implements AccountsService {
   }
 
   @Override
-  public List<CardDto> getCreditCards(String clientDocument) {
-    return creditCardFeignClient.getCreditCards(clientDocument);
+  public Flux<CardDto> getCreditCards(String clientDocument) {
+    return creditCardWebClient.getCreditCards(clientDocument);
   }
 
   @Override
-  public List<Account> getAccountsByClient(String document) {
-    List<AccountsDocuments> accounts = accountRepository.findByClientDocument(document);
+  public Flux<Account> getAccountsByClient(String document) {
 
-    if (accounts.isEmpty()) {
-      return new ArrayList<>();
-    }
+    Flux<AccountsDocuments> accounts = accountRepository.findByClientDocument(document);
 
-    return AccountMapper.mapListAccountsDocsToListAccounts(accounts);
-
+    return accounts
+            .filter(Objects::nonNull)
+            .map(AccountMapper::mapAccountDocToAccountDto);
   }
 }

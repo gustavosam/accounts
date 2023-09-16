@@ -1,16 +1,11 @@
 package com.microservice.accounts.service.mapper;
 
 import com.microservice.accounts.documents.AccountsDocuments;
-import com.microservice.accounts.model.Account;
-import com.microservice.accounts.model.AccountRequest;
-import com.microservice.accounts.model.Signers;
-import com.microservice.accounts.model.SignersRequired;
-import com.microservice.accounts.model.TitularsIn;
+import com.microservice.accounts.model.*;
 import com.microservice.accounts.util.AccountDto;
 import com.microservice.accounts.util.AccountRetireDepositDto;
 import com.microservice.accounts.util.complementary.SignersComplementary;
 import com.microservice.accounts.util.complementary.TitularsComplementary;
-import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
@@ -78,7 +73,7 @@ public class AccountMapper {
   /**
    * Esta método convierte la clase SignersRequired en SignersComplementary.
    * */
-  public static SignersComplementary mapSignerReToSignerComplementary(SignersRequired signers) {
+  public static SignersComplementary mapSignerReToSignerComplementary(SignerList signers) {
     SignersComplementary complementary = new SignersComplementary();
 
     complementary.setDocument(signers.getDocument());
@@ -129,16 +124,6 @@ public class AccountMapper {
     accountRetireDeposit.setAccountType(account.getAccountType());
 
     return accountRetireDeposit;
-  }
-
-  /**
-   * Este método convierte la lista de AccountsDocuments en List Account.
-   * */
-  public static List<Account> mapListAccountsDocsToListAccounts(List<AccountsDocuments> accounts) {
-    return accounts.stream()
-            .filter(Objects::nonNull)
-            .map(AccountMapper::mapAccountDocToAccountDto)
-            .collect(Collectors.toList());
   }
 
 }
