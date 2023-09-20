@@ -15,7 +15,7 @@ public class ClientWebClient {
   @Autowired
   private WebClient.Builder webClientBuilder;
 
-  @CircuitBreaker(name = "myCircuitBreaker", fallbackMethod = "fallbackMethod")
+  @CircuitBreaker(name = "circuitBreakerClient", fallbackMethod = "fallbackMethod")
   public Mono<ClientDto> getClient(String document){
     return webClientBuilder.build()
             .get()
